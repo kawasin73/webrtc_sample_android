@@ -1,11 +1,15 @@
 package com.kawasin73.webrtcsample;
 
+import android.Manifest;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.support.annotation.LayoutRes;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -34,7 +38,8 @@ import io.skyway.Peer.Peer;
 import io.skyway.Peer.PeerOption;
 
 public class MainActivity extends AppCompatActivity {
-    private static String TAG = "MainActivity";
+    private static final int RECORD_AUDIO_REQUEST_ID = 1;
+    private static final String TAG = "MainActivity";
     private List<String> idList = new ArrayList<String>();
     private MyAdapter adapter;
     private TextView idTextView;
@@ -50,14 +55,10 @@ public class MainActivity extends AppCompatActivity {
 
         Context context = getApplicationContext();
         AudioManager am = (AudioManager)context.getSystemService(Context.AUDIO_SERVICE);
-        MediaPlayer mp = new MediaPlayer();
-        int ringVolume = am.getStreamVolume(AudioManager.STREAM_VOICE_CALL);
-        int ringMaxVolume = am.getStreamMaxVolume(AudioManager.STREAM_VOICE_CALL);
-        am.setStreamVolume(AudioManager.STREAM_VOICE_CALL,ringMaxVolume,0);
 
         am.setMode(AudioManager.MODE_IN_COMMUNICATION);
-        am.setSpeakerphoneOn(true);
-        mp.setAudioStreamType(AudioManager.MODE_IN_COMMUNICATION);
+
+        checkAudioPermission();
 
         ListView listView = (ListView) findViewById(R.id.list_view);
         adapter = new MyAdapter(this, 0, idList);
@@ -116,6 +117,57 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+    }
+
+    private void checkAudioPermission() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            // Should we show an explanation?
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                    Manifest.permission.RECORD_AUDIO)) {
+
+                // Show an expanation to the user *asynchronously* -- don't block
+                // this thread waiting for the user's response! After the user
+                // sees the explanation, try again to request the permission.
+
+            } else {
+
+                // No explanation needed, we can request the permission.
+
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.RECORD_AUDIO},
+                        RECORD_AUDIO_REQUEST_ID);
+
+                // MY_PERMISSIONS_REQUEST_READ_CONTACTS is an
+                // app-defined int constant. The callback method gets the
+                // result of the request.
+            }
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        switch (requestCode) {
+            case RECORD_AUDIO_REQUEST_ID: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+                    // permission was granted, yay! Do the
+                    // contacts-related task you need to do.
+
+                } else {
+
+                    // permission denied, boo! Disable the
+                    // functionality that depends on this permission.
+                }
+                return;
+            }
+
+            // other 'case' lines to check for other
+            // permissions this app might request
+        }
     }
 
     private void refreshAllPeers() {
