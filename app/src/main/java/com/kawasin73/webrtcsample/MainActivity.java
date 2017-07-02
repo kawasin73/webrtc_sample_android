@@ -45,6 +45,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView idTextView;
     private Peer peer;
     private MediaConnection connection;
+    private MediaPlayer player;
     private String currentPeerId = "";
     private String selectedPeerId = "";
 
@@ -59,6 +60,8 @@ public class MainActivity extends AppCompatActivity {
         am.setMode(AudioManager.MODE_IN_COMMUNICATION);
 
         checkAudioPermission();
+
+        setVolumeControlStream(AudioManager.STREAM_MUSIC);
 
         ListView listView = (ListView) findViewById(R.id.list_view);
         adapter = new MyAdapter(this, 0, idList);
@@ -92,10 +95,7 @@ public class MainActivity extends AppCompatActivity {
         closeBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (MainActivity.this.connection != null) {
-                    MainActivity.this.connection.close();
-                    MainActivity.this.connection = null;
-                }
+                closeConnection();
             }
         });
 
@@ -119,6 +119,10 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onCallback(Object o) {
                 Log.d(TAG, "CALL Event is Received");
+                if (MainActivity.this.connection != null) {
+                    Log.d(TAG, "connection is already created");
+                    return;
+                }
                 if (o instanceof MediaConnection) {
                     MediaConnection connection = (MediaConnection) o;
                     MediaStream stream = MainActivity.this.getMediaStream();
@@ -126,6 +130,7 @@ public class MainActivity extends AppCompatActivity {
                     connection.answer(stream);
 
                     setConnectionCallback(connection);
+                    startMusic();
 
                     MainActivity.this.connection = connection;
                     Log.d(TAG, "CALL Event is Received and Set");
@@ -227,6 +232,11 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, String.format("peer.isDisconnected: %b", peer.isDisconnected));
         Log.d(TAG, "selectedPeerId: " + selectedPeerId);
 
+        if (connection != null) {
+            Log.d(TAG, "connection is already created");
+            return;
+        }
+
         if (!peer.isDestroyed && !peer.isDisconnected) {
             MediaStream stream = getMediaStream();
             CallOption option = new CallOption();
@@ -238,21 +248,29 @@ public class MainActivity extends AppCompatActivity {
             }
 
             setConnectionCallback(connection);
+            startMusic();
 
             this.connection = connection;
         }
     }
 
-    private void setConnectionCallback(final MediaConnection connection) {
+    private void setConnectionCallback(MediaConnection connection) {
         connection.on(MediaConnection.MediaEventEnum.CLOSE, new OnCallback() {
             @Override
             public void onCallback(Object o) {
                 Log.d(TAG, "Close Event is Received");
-                // TODO:
-                connection.close();
-                MainActivity.this.connection = null;
+                closeConnection();
             }
         });
+    }
+
+    private void closeConnection() {
+        if (connection != null) {
+            stopMusic();
+            connection.close();
+            MainActivity.this.connection = null;
+            Log.d(TAG, "Connection Closed");
+        }
     }
 
     private MediaStream getMediaStream() {
@@ -262,16 +280,38 @@ public class MainActivity extends AppCompatActivity {
         return Navigator.getUserMedia(constraints);
     }
 
+    private void startMusic() {
+        if (player != null) {
+            Log.d(TAG, "MediaPlayer is already created");
+            return;
+        }
+        player = MediaPlayer.create(getApplicationContext(), R.raw.hokkai_bon_xf);
+        if (player == null) {
+            Log.e(TAG, "MediaPlayer is not created");
+            return;
+        }
+        player.setLooping(true);
+        player.start();
+        Log.d(TAG, "MediaPlayer started");
+    }
+
+    private void stopMusic() {
+        if (player == null) {
+            return;
+        }
+        player.stop();
+        player.release();
+        player = null;
+    }
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
         if (peer != null) {
             peer.destroy();
         }
-        if (connection != null) {
-            connection.close();
-            this.connection = null;
-        }
+        closeConnection();
+        stopMusic();
     }
 
     private class MyAdapter extends ArrayAdapter<String> {
