@@ -12,9 +12,15 @@ android {
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
+        debug {
+            buildConfigField "String", "SKYWAY_API_KEY", "\"${project.property("skywayApiKey")}\""
+            buildConfigField "String", "SKYWAY_HOST", "\"${project.property("skywayHost")}\""
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            buildConfigField "String", "SKYWAY_API_KEY", "\"${project.property("skywayApiKey")}\""
+            buildConfigField "String", "SKYWAY_HOST", "\"${project.property("skywayHost")}\""
         }
     }
 }
