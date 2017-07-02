@@ -54,7 +54,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         Context context = getApplicationContext();
-        AudioManager am = (AudioManager)context.getSystemService(Context.AUDIO_SERVICE);
+        AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
 
         am.setMode(AudioManager.MODE_IN_COMMUNICATION);
 
@@ -88,6 +88,17 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        Button closeBtn = (Button) findViewById(R.id.close_btn);
+        closeBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (MainActivity.this.connection != null) {
+                    MainActivity.this.connection.close();
+                    MainActivity.this.connection = null;
+                }
+            }
+        });
+
         peer.on(Peer.PeerEventEnum.OPEN, new OnCallback() {
             @Override
             public void onCallback(Object o) {
@@ -111,7 +122,11 @@ public class MainActivity extends AppCompatActivity {
                 if (o instanceof MediaConnection) {
                     MediaConnection connection = (MediaConnection) o;
                     MediaStream stream = MainActivity.this.getMediaStream();
+
                     connection.answer(stream);
+
+                    setConnectionCallback(connection);
+
                     MainActivity.this.connection = connection;
                     Log.d(TAG, "CALL Event is Received and Set");
                 }
@@ -216,23 +231,28 @@ public class MainActivity extends AppCompatActivity {
             MediaStream stream = getMediaStream();
             CallOption option = new CallOption();
             option.metadata = "test"; // TODO: metadata
-            final MediaConnection connection =  peer.call(selectedPeerId, stream, option);
+            final MediaConnection connection = peer.call(selectedPeerId, stream, option);
             if (connection == null) {
                 Log.d(TAG, "MediaConnection is null");
                 return;
             }
 
-            connection.on(MediaConnection.MediaEventEnum.CLOSE, new OnCallback() {
-                @Override
-                public void onCallback(Object o) {
-                    // TODO:
-                    connection.close();
-                    MainActivity.this.connection = null;
-                }
-            });
+            setConnectionCallback(connection);
 
             this.connection = connection;
         }
+    }
+
+    private void setConnectionCallback(final MediaConnection connection) {
+        connection.on(MediaConnection.MediaEventEnum.CLOSE, new OnCallback() {
+            @Override
+            public void onCallback(Object o) {
+                Log.d(TAG, "Close Event is Received");
+                // TODO:
+                connection.close();
+                MainActivity.this.connection = null;
+            }
+        });
     }
 
     private MediaStream getMediaStream() {
