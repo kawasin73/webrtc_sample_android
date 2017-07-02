@@ -300,6 +300,7 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
         player.stop();
+        player.reset();
         player.release();
         player = null;
     }
