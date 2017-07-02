@@ -1,6 +1,8 @@
 package com.kawasin73.webrtcsample;
 
 import android.content.Context;
+import android.media.AudioManager;
+import android.media.MediaPlayer;
 import android.support.annotation.LayoutRes;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -45,6 +47,17 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        Context context = getApplicationContext();
+        AudioManager am = (AudioManager)context.getSystemService(Context.AUDIO_SERVICE);
+        MediaPlayer mp = new MediaPlayer();
+        int ringVolume = am.getStreamVolume(AudioManager.STREAM_VOICE_CALL);
+        int ringMaxVolume = am.getStreamMaxVolume(AudioManager.STREAM_VOICE_CALL);
+        am.setStreamVolume(AudioManager.STREAM_VOICE_CALL,ringMaxVolume,0);
+
+        am.setMode(AudioManager.MODE_IN_COMMUNICATION);
+        am.setSpeakerphoneOn(true);
+        mp.setAudioStreamType(AudioManager.MODE_IN_COMMUNICATION);
 
         ListView listView = (ListView) findViewById(R.id.list_view);
         adapter = new MyAdapter(this, 0, idList);
@@ -94,13 +107,12 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onCallback(Object o) {
                 Log.d(TAG, "CALL Event is Received");
-                Log.d(TAG, String.valueOf(o.getClass()));
-                Log.d(TAG, String.valueOf(o));
                 if (o instanceof MediaConnection) {
                     MediaConnection connection = (MediaConnection) o;
                     MediaStream stream = MainActivity.this.getMediaStream();
                     connection.answer(stream);
                     MainActivity.this.connection = connection;
+                    Log.d(TAG, "CALL Event is Received and Set");
                 }
             }
         });
